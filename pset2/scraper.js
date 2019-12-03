@@ -18,6 +18,10 @@ const mongoose = require('mongoose')
 const userSchema = require('./userSchema.js')
 const User = mongoose.model('user', userSchema, 'user')
 
+const cliProgress = require('cli-progress');
+const bar1 = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
+bar1.start(80001, 0);
+
 /*
   Node API for promises
 */
@@ -28,11 +32,11 @@ const cheerio = require('cheerio');
 
 const baseURL = 'https://secure.runescape.com/m=hiscore_oldschool/';
 const searchURL = [];
-
+let Searchcount = 1;
 /*
   Set how many players you search for ( 25 players per page)
 */
-const pages = 20;
+const pages = 80001;
 for (var i = 1; i <= pages; i++) {
     searchURL.push(baseURL + 'overall?table=0&page=' + i);
 }
@@ -58,6 +62,8 @@ async function findUser(name) {
 
 const getUsers= async () => {
     await Promise.map(searchURL, function(url) {
+        bar1.increment();
+        bar1.update(1);
         return request.getAsync(url).spread(function(response,body) {
             const nameMap = cheerio('tr.personal-hiscores__row', body).map(async (i, e) => {
                 const rank = e.children[0].next.children[0].data.replace(/(\r\n|\n|\r)/gm,"");
