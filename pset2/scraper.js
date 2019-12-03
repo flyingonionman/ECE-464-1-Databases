@@ -17,6 +17,9 @@ const DATABASE_NAME = "Cluster0";
 const mongoose = require('mongoose')
 const userSchema = require('./userSchema.js')
 const User = mongoose.model('user', userSchema, 'user')
+const cliProgress = require('cli-progress');
+const bar1 = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
+
 
 /*
   Node API for promises
@@ -32,10 +35,11 @@ const searchURL = [];
 /*
   Set how many players you search for ( 25 players per page)
 */
-pages = 20;
-
+const pages =5;
 for (var i = 1; i <= pages; i++) {
     searchURL.push(baseURL + 'overall?table=0&page=' + i);
+}
+
 
 
 
@@ -59,9 +63,11 @@ async function findUser(name) {
 }
 
 const getUsers= async () => {
+    bar1.start(pages * 25 , 0);
 
     await Promise.map(searchURL, function(url) {
         return request.getAsync(url).spread(function(response,body) {
+
             const nameMap = cheerio('tr.personal-hiscores__row', body).map(async (i, e) => {
                 const rank = e.children[0].next.children[0].data.replace(/(\r\n|\n|\r)/gm,"");
                 const modhtml = e.children[3].children[1].attribs.href.replace(/\uFFFD/g, '%A0');
@@ -82,34 +88,36 @@ const getUsers= async () => {
                 }
             }).get();
             console.log(nameMap);
-
             return Promise.all(nameMap);
         });
     }).then(result => {
         ;
         (async () => {
-            
             /*
             Create a new user using schema
             or find that user if it already exsist in the database.
             */
-            for (var i = 0; i < pages; i++) {
-                for (var k =0 ; k<25; k++){
-                    const name = result[i][k].name
-                    const link = result[i][k].link
-                    const rank = result[i][k].rank
-                    const exp = result[i][k].exp
-                    const level = result[i][k].level
-                    
-                    let user = await connector.then(async () => {
-                        return findUser(name)
-                    })
+            if (result != undefined){
+                for (var i = 0; i < pages; i++) {
+                    for (var k =0 ; k<25; k++){
+                        const name = result[i][k].name
+                        const link = result[i][k].link
+                        const rank = result[i][k].rank
+                        const exp = result[i][k].exp
+                        const level = result[i][k].level
+                        
+                        let user = await connector.then(async () => {
+                            return findUser(name)
+                        })
 
-                    if (!user) {
-                        user = await createUser(name, link,rank,exp,level)
+                        if (!user) {
+                            user = await createUser(name, link,rank,exp,level)
+                        }
+
+                        bar1.update(1);
                     }
-                }
-            }         
+                } 
+            }
         })();
     }).catch(function(err) {
         console.log(err);
@@ -118,5 +126,5 @@ const getUsers= async () => {
 
 
 getUsers()
-    .then(async() => console.log('SUCCESSFULLY COMPLETED THE WEB SCRAPING SAMPLE'))
+    .then(async() => {console.log('SUCCESSFULLY COMPLETED THE WEB SCRAPING SAMPLE');bar1.stop();})
     .catch((err) => console.error(err));
