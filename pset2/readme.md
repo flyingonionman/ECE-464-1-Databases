@@ -26,6 +26,10 @@ based on their name,
 
     node getter.js name "PlayerName"
 
+![player](https://github.com/flyingonionman/ECE-464-1-Databases/blob/master/pset2/namesearch.png)
+
 or to search which player is at a certain rank
 
     node getter.js rank "Rank"
+
+![rank](https://github.com/flyingonionman/ECE-464-1-Databases/blob/master/pset2/ranksearch.png)
