@@ -31,17 +31,14 @@ const cheerio = require('cheerio');
 
 const baseURL = 'https://secure.runescape.com/m=hiscore_oldschool/';
 const searchURL = [];
-
+let searchCount = 1;
 /*
   Set how many players you search for ( 25 players per page)
 */
-const pages =5;
+const pages =20;
 for (var i = 1; i <= pages; i++) {
     searchURL.push(baseURL + 'overall?table=0&page=' + i);
 }
-
-
-
 
 const connector = mongoose.connect(CONNECTION_URL, {
     useNewUrlParser: true,
@@ -63,11 +60,9 @@ async function findUser(name) {
 }
 
 const getUsers= async () => {
-    bar1.start(pages * 25 , 0);
 
     await Promise.map(searchURL, function(url) {
         return request.getAsync(url).spread(function(response,body) {
-
             const nameMap = cheerio('tr.personal-hiscores__row', body).map(async (i, e) => {
                 const rank = e.children[0].next.children[0].data.replace(/(\r\n|\n|\r)/gm,"");
                 const modhtml = e.children[3].children[1].attribs.href.replace(/\uFFFD/g, '%A0');
@@ -87,7 +82,6 @@ const getUsers= async () => {
                     level
                 }
             }).get();
-            console.log(nameMap);
             return Promise.all(nameMap);
         });
     }).then(result => {
@@ -97,6 +91,7 @@ const getUsers= async () => {
             Create a new user using schema
             or find that user if it already exsist in the database.
             */
+            console.log(result)
             if (result != undefined){
                 for (var i = 0; i < pages; i++) {
                     for (var k =0 ; k<25; k++){
@@ -114,7 +109,6 @@ const getUsers= async () => {
                             user = await createUser(name, link,rank,exp,level)
                         }
 
-                        bar1.update(1);
                     }
                 } 
             }
